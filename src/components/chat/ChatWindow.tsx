@@ -2,7 +2,7 @@ import { useChat } from "@ai-sdk/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import { Download, FileText } from "lucide-react";
+import { Download, FileText, ImagePlus, Paperclip, X } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 import { toast } from "sonner";
 
@@ -40,6 +40,17 @@ import { getThread } from "@/lib/threads.functions";
 
 type ChatWindowProps = { threadId: string };
 
+const DOCUMENT_ACCEPT =
+  ".pdf,.doc,.docx,.txt,.rtf,.md,.csv,.tsv,.xls,.xlsx,.ppt,.pptx,.json,.xml,.yml,.yaml,.log";
+const ACCEPT = `image/*,${DOCUMENT_ACCEPT}`;
+
+function formatBytes(bytes?: number) {
+  if (!bytes) return null;
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 function AttachmentPreviews({ clearRef }: { clearRef: React.MutableRefObject<(() => void) | null> }) {
   const attachments = usePromptInputAttachments();
   clearRef.current = attachments.clear;
@@ -47,24 +58,48 @@ function AttachmentPreviews({ clearRef }: { clearRef: React.MutableRefObject<(()
 
   return (
     <PromptInputHeader>
-      {attachments.files.map((file) => (
-        <button
-          key={file.id}
-          type="button"
-          onClick={() => attachments.remove(file.id)}
-          title={`Remove ${file.filename ?? "attachment"}`}
-          className="group relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-border sm:h-14 sm:w-14"
-        >
-          {file.mediaType?.startsWith("image/") ? (
+      {attachments.files.map((file) =>
+        file.mediaType?.startsWith("image/") ? (
+          <button
+            key={file.id}
+            type="button"
+            onClick={() => attachments.remove(file.id)}
+            title={`Remove ${file.filename ?? "attachment"}`}
+            className="group relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-border sm:h-14 sm:w-14"
+          >
             <img src={file.url} alt="" className="h-full w-full object-cover" />
-          ) : (
-            <span className="flex h-full w-full items-center justify-center text-xs">file</span>
-          )}
-          <span className="absolute inset-0 hidden items-center justify-center bg-background/70 text-xs group-hover:flex">
-            Remove
-          </span>
-        </button>
-      ))}
+            <span className="absolute inset-0 hidden items-center justify-center bg-background/70 text-xs group-hover:flex">
+              Remove
+            </span>
+          </button>
+        ) : (
+          <div
+            key={file.id}
+            className="flex min-w-0 max-w-[15rem] shrink-0 items-center gap-2 rounded-lg border border-border bg-card px-2.5 py-2"
+          >
+            <FileText className="h-4 w-4 shrink-0 text-primary" />
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-xs font-medium">
+                {file.filename ?? "document"}
+              </span>
+              <span className="block text-[10px] uppercase text-muted-foreground">
+                {(file.filename ?? "").split(".").pop()}
+                {formatBytes((file as { size?: number }).size)
+                  ? ` · ${formatBytes((file as { size?: number }).size)}`
+                  : ""}
+              </span>
+            </span>
+            <button
+              type="button"
+              onClick={() => attachments.remove(file.id)}
+              aria-label={`Remove ${file.filename ?? "file"}`}
+              className="shrink-0 rounded p-0.5 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ),
+      )}
     </PromptInputHeader>
   );
 }
