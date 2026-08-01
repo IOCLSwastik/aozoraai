@@ -2,6 +2,7 @@ import { useChat } from "@ai-sdk/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { DefaultChatTransport, type UIMessage } from "ai";
+import { Download, FileText } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 import { toast } from "sonner";
 
@@ -39,8 +40,9 @@ import { getThread } from "@/lib/threads.functions";
 
 type ChatWindowProps = { threadId: string };
 
-function AttachmentPreviews() {
+function AttachmentPreviews({ clearRef }: { clearRef: React.MutableRefObject<(() => void) | null> }) {
   const attachments = usePromptInputAttachments();
+  clearRef.current = attachments.clear;
   if (attachments.files.length === 0) return null;
 
   return (
@@ -159,6 +161,8 @@ function ChatThread({
     composerRef.current?.querySelector("textarea")?.focus();
   };
 
+  const clearAttachmentsRef = useRef<(() => void) | null>(null);
+
   useEffect(() => {
     focusComposer();
   }, [threadId, status]);
@@ -179,6 +183,7 @@ function ChatThread({
       );
 
       await sendMessage({ text, files });
+      clearAttachmentsRef.current?.();
     } catch (error) {
       console.error(error);
       toast.error("Could not attach that file.");
@@ -228,10 +233,34 @@ function ChatThread({
                     );
                   }
 
-                  if (part.type === "tool-web_search" || part.type === "tool-generate_image") {
-                    const isImage = part.type === "tool-generate_image";
+                  if (
+                    part.type === "tool-web_search" ||
+                    part.type === "tool-generate_image" ||
+                    part.type === "tool-edit_image" ||
+                    part.type === "tool-create_pdf"
+                  ) {
+                    const isImage =
+                      part.type === "tool-generate_image" || part.type === "tool-edit_image";
+                    const isPdf = part.type === "tool-create_pdf";
                     const output = part.output as
-                      { imageUrl?: string; prompt?: string; error?: string } | undefined;
+                      | {
+                          imageUrl?: string;
+                          prompt?: string;
+                          instruction?: string;
+                          error?: string;
+                          url?: string;
+                          filename?: string;
+                          pages?: number;
+                          bytes?: number;
+                        }
+                      | undefined;
+                    const label = isPdf
+                      ? "Creating PDF"
+                      : part.type === "tool-edit_image"
+                        ? "Editing image"
+                        : part.type === "tool-generate_image"
+                          ? "Generating image"
+                          : "Searching the web";
 
                     return (
                       <div key={key} className="w-full space-y-3">
@@ -239,7 +268,7 @@ function ChatThread({
                           <ToolHeader
                             type={part.type}
                             state={part.state}
-                            title={isImage ? "Generating image" : "Searching the web"}
+                            title={label}
                           />
                           <ToolContent>
                             <ToolInput input={part.input} />
@@ -256,11 +285,47 @@ function ChatThread({
                           </ToolContent>
                         </Tool>
                         {isImage && output?.imageUrl && (
-                          <img
-                            src={output.imageUrl}
-                            alt={output.prompt ?? "Generated image"}
-                            className="h-auto w-full max-w-lg rounded-2xl border border-border"
-                          />
+                          <div className="space-y-2">
+                            <img
+                              src={output.imageUrl}
+                              alt={output.prompt ?? output.instruction ?? "Generated image"}
+                              className="h-auto w-full max-w-lg rounded-2xl border border-border"
+                            />
+                            <a
+                              href={output.imageUrl}
+                              download="aozora-image.png"
+                              className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+                            >
+                              <Download className="h-3.5 w-3.5" />
+                              Download image
+                            </a>
+                          </div>
+                        )}
+                        {isPdf && output?.url && (
+                          <a
+                            href={output.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 transition hover:border-primary/60"
+                          >
+                            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                              <FileText className="h-5 w-5" />
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-sm font-medium">
+                                {output.filename ?? "document.pdf"}
+                              </span>
+                              <span className="block text-xs text-muted-foreground">
+                                PDF
+                                {output.pages ? ` · ${output.pages} page${output.pages > 1 ? "s" : ""}` : ""}
+                                {output.bytes ? ` · ${Math.max(1, Math.round(output.bytes / 1024))} KB` : ""}
+                              </span>
+                            </span>
+                            <Download className="h-4 w-4 shrink-0 text-muted-foreground" />
+                          </a>
+                        )}
+                        {output?.error && (
+                          <p className="text-sm text-destructive">{output.error}</p>
                         )}
                       </div>
                     );
@@ -288,7 +353,7 @@ function ChatThread({
         ref={composerRef}
       >
         <PromptInput onSubmit={handleSubmit} accept="image/*" multiple maxFiles={4}>
-          <AttachmentPreviews />
+        <AttachmentPreviews clearRef={clearAttachmentsRef} />
           <PromptInputTextarea
             placeholder="Message AozoraAi…"
             autoFocus
