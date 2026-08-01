@@ -243,6 +243,7 @@ function ChatThread({
               </h2>
               <p className="mt-2 max-w-md text-sm text-muted-foreground">
                 Ask anything, attach an image, search the live web, or ask for a picture.
+                {" "}Attach PDFs, Word, Excel or PowerPoint files and I'll read them.
               </p>
             </div>
           )}
@@ -265,6 +266,20 @@ function ChatThread({
                         alt={part.filename ?? "Attached image"}
                         className="h-auto max-h-72 w-auto max-w-full rounded-xl border border-border sm:max-h-80"
                       />
+                    );
+                  }
+
+                  if (part.type === "file") {
+                    return (
+                      <span
+                        key={key}
+                        className="flex max-w-xs items-center gap-2 rounded-xl border border-border bg-card px-3 py-2"
+                      >
+                        <FileText className="h-4 w-4 shrink-0 text-primary" />
+                        <span className="min-w-0 truncate text-xs font-medium">
+                          {part.filename ?? "document"}
+                        </span>
+                      </span>
                     );
                   }
 
