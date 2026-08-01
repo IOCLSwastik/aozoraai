@@ -65,15 +65,16 @@ export const Route = createFileRoute("/api/chat")({
         const uiMessages = messages as UIMessage[];
         const lastMessage = uiMessages.at(-1);
 
-        const sourceImages: SourceImage[] = (lastMessage?.parts ?? [])
+        const sourceImages: SourceImage[] = ((lastMessage?.parts ?? []) as unknown[])
+          .map((part) => part as { type?: string; url?: string; mediaType?: string; filename?: string })
           .filter(
-            (part): part is { type: "file"; url: string; mediaType?: string; filename?: string } =>
+            (part) =>
               part.type === "file" &&
-              typeof (part as { url?: unknown }).url === "string" &&
-              ((part as { mediaType?: string }).mediaType ?? "").startsWith("image/"),
+              typeof part.url === "string" &&
+              (part.mediaType ?? "").startsWith("image/"),
           )
           .map((part) => ({
-            url: part.url,
+            url: part.url as string,
             mediaType: part.mediaType,
             filename: part.filename,
           }));
