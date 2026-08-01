@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Json } from "@/integrations/supabase/types";
 
 export type ThreadSummary = {
   id: string;
@@ -12,7 +13,7 @@ export type ThreadSummary = {
 export type StoredMessage = {
   id: string;
   role: "user" | "assistant" | "system";
-  parts: unknown[];
+  parts: Json[];
 };
 
 export const listThreads = createServerFn({ method: "GET" })
@@ -73,7 +74,7 @@ export const getThread = createServerFn({ method: "GET" })
       const messages: StoredMessage[] = (rows ?? []).map((row) => ({
         id: row.id,
         role: row.role as StoredMessage["role"],
-        parts: Array.isArray(row.parts) ? (row.parts as unknown[]) : [],
+        parts: Array.isArray(row.parts) ? (row.parts as Json[]) : [],
       }));
 
       return {
