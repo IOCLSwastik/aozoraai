@@ -40,8 +40,9 @@ import { getThread } from "@/lib/threads.functions";
 
 type ChatWindowProps = { threadId: string };
 
-function AttachmentPreviews() {
+function AttachmentPreviews({ clearRef }: { clearRef: React.MutableRefObject<(() => void) | null> }) {
   const attachments = usePromptInputAttachments();
+  clearRef.current = attachments.clear;
   if (attachments.files.length === 0) return null;
 
   return (
@@ -180,6 +181,7 @@ function ChatThread({
       );
 
       await sendMessage({ text, files });
+      clearAttachmentsRef.current?.();
     } catch (error) {
       console.error(error);
       toast.error("Could not attach that file.");
