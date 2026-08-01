@@ -1,5 +1,4 @@
 import { createServerFn } from "@tanstack/react-start";
-import type { UIMessage } from "ai";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -8,6 +7,12 @@ export type ThreadSummary = {
   id: string;
   title: string;
   updatedAt: string;
+};
+
+export type StoredMessage = {
+  id: string;
+  role: "user" | "assistant" | "system";
+  parts: unknown[];
 };
 
 export const listThreads = createServerFn({ method: "GET" })
@@ -47,7 +52,7 @@ export const getThread = createServerFn({ method: "GET" })
     async ({
       data,
       context,
-    }): Promise<{ thread: ThreadSummary; messages: UIMessage[] } | null> => {
+    }): Promise<{ thread: ThreadSummary; messages: StoredMessage[] } | null> => {
       const { data: thread, error: threadError } = await context.supabase
         .from("threads")
         .select("id, title, updated_at")
@@ -65,10 +70,10 @@ export const getThread = createServerFn({ method: "GET" })
 
       if (messagesError) throw new Error(messagesError.message);
 
-      const messages: UIMessage[] = (rows ?? []).map((row) => ({
+      const messages: StoredMessage[] = (rows ?? []).map((row) => ({
         id: row.id,
-        role: row.role as UIMessage["role"],
-        parts: (Array.isArray(row.parts) ? row.parts : []) as UIMessage["parts"],
+        role: row.role as StoredMessage["role"],
+        parts: Array.isArray(row.parts) ? (row.parts as unknown[]) : [],
       }));
 
       return {
