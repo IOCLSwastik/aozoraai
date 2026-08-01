@@ -19,11 +19,11 @@ import {
   PromptInputActionMenu,
   PromptInputActionMenuContent,
   PromptInputActionMenuTrigger,
-  PromptInputAttachment,
-  PromptInputAttachments,
+  PromptInputHeader,
   PromptInputFooter,
   PromptInputSubmit,
   PromptInputTextarea,
+  usePromptInputAttachments,
   type PromptInputMessage,
 } from "@/components/ai-elements/prompt-input";
 import { Shimmer } from "@/components/ai-elements/shimmer";
@@ -33,6 +33,34 @@ import { supabase } from "@/integrations/supabase/client";
 import { getThread } from "@/lib/threads.functions";
 
 type ChatWindowProps = { threadId: string };
+
+function AttachmentPreviews() {
+  const attachments = usePromptInputAttachments();
+  if (attachments.files.length === 0) return null;
+
+  return (
+    <PromptInputHeader>
+      {attachments.files.map((file) => (
+        <button
+          key={file.id}
+          type="button"
+          onClick={() => attachments.remove(file.id)}
+          title={`Remove ${file.filename ?? "attachment"}`}
+          className="group relative h-14 w-14 overflow-hidden rounded-lg border border-border"
+        >
+          {file.mediaType?.startsWith("image/") ? (
+            <img src={file.url} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <span className="flex h-full w-full items-center justify-center text-xs">file</span>
+          )}
+          <span className="absolute inset-0 hidden items-center justify-center bg-background/70 text-xs group-hover:flex">
+            Remove
+          </span>
+        </button>
+      ))}
+    </PromptInputHeader>
+  );
+}
 
 async function toDataUrl(url: string) {
   const response = await fetch(url);
@@ -116,7 +144,7 @@ export function ChatWindow({ threadId }: ChatWindowProps) {
         message.files.map(async (file) => ({
           type: "file" as const,
           mediaType: file.mediaType,
-          filename: file.filename,
+          filename: file.filename ?? "attachment",
           url: file.url.startsWith("blob:") ? await toDataUrl(file.url) : file.url,
         })),
       );
@@ -192,13 +220,7 @@ export function ChatWindow({ threadId }: ChatWindowProps) {
                           <ToolHeader
                             type={part.type}
                             state={part.state}
-                            icon={
-                              isImage ? (
-                                <ImagePlus className="size-4 text-primary" />
-                              ) : (
-                                <Globe className="size-4 text-primary" />
-                              )
-                            }
+                            title={isImage ? "Generating image" : "Searching the web"}
                           />
                           <ToolContent>
                             <ToolInput input={part.input} />
@@ -244,9 +266,7 @@ export function ChatWindow({ threadId }: ChatWindowProps) {
 
       <div className="mx-auto w-full max-w-3xl px-4 pb-6" ref={composerRef}>
         <PromptInput onSubmit={handleSubmit} accept="image/*" multiple maxFiles={4}>
-          <PromptInputAttachments>
-            {(attachment) => <PromptInputAttachment data={attachment} />}
-          </PromptInputAttachments>
+          <AttachmentPreviews />
           <PromptInputTextarea placeholder="Message AozoraAi…" autoFocus />
           <PromptInputFooter>
             <PromptInputActionMenu>
