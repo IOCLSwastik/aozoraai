@@ -189,17 +189,18 @@ function ChatThread({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <header className="flex items-center gap-2 border-b border-border px-5 py-3">
-        <img src={logo} alt="" width={22} height={22} className="h-5.5 w-5.5 md:hidden" />
+      <header className="hidden items-center gap-2 border-b border-border px-5 py-3 md:flex">
         <h1 className="truncate text-sm font-medium">{title}</h1>
       </header>
 
       <Conversation className="min-h-0 flex-1">
-        <ConversationContent className="mx-auto w-full max-w-3xl px-4 py-8">
+        <ConversationContent className="mx-auto w-full max-w-3xl px-3 py-6 sm:px-4 sm:py-8">
           {messages.length === 0 && (
-            <div className="flex flex-col items-center py-20 text-center">
-              <img src={logo} alt="" width={56} height={56} className="h-14 w-14" />
-              <h2 className="mt-6 text-2xl font-semibold">How can I help you today?</h2>
+            <div className="flex flex-col items-center py-12 text-center sm:py-20">
+              <img src={logo} alt="" width={56} height={56} className="h-12 w-12 sm:h-14 sm:w-14" />
+              <h2 className="mt-5 text-xl font-semibold sm:mt-6 sm:text-2xl">
+                How can I help you today?
+              </h2>
               <p className="mt-2 max-w-md text-sm text-muted-foreground">
                 Ask anything, attach an image, search the live web, or ask for a picture.
               </p>
@@ -222,7 +223,7 @@ function ChatThread({
                         key={key}
                         src={part.url}
                         alt={part.filename ?? "Attached image"}
-                        className="max-h-80 rounded-xl border border-border"
+                        className="h-auto max-h-72 w-auto max-w-full rounded-xl border border-border sm:max-h-80"
                       />
                     );
                   }
@@ -258,7 +259,7 @@ function ChatThread({
                           <img
                             src={output.imageUrl}
                             alt={output.prompt ?? "Generated image"}
-                            className="w-full max-w-lg rounded-2xl border border-border"
+                            className="h-auto w-full max-w-lg rounded-2xl border border-border"
                           />
                         )}
                       </div>
@@ -282,10 +283,17 @@ function ChatThread({
         <ConversationScrollButton />
       </Conversation>
 
-      <div className="mx-auto w-full max-w-3xl px-4 pb-6" ref={composerRef}>
+      <div
+        className="mx-auto w-full max-w-3xl px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-4 sm:pb-6"
+        ref={composerRef}
+      >
         <PromptInput onSubmit={handleSubmit} accept="image/*" multiple maxFiles={4}>
           <AttachmentPreviews />
-          <PromptInputTextarea placeholder="Message AozoraAi…" autoFocus />
+          <PromptInputTextarea
+            placeholder="Message AozoraAi…"
+            autoFocus
+            className="text-base sm:text-sm"
+          />
           <PromptInputFooter>
             <PromptInputActionMenu>
               <PromptInputActionMenuTrigger />
@@ -296,7 +304,7 @@ function ChatThread({
             <PromptInputSubmit status={status} onStop={stop} disabled={false} />
           </PromptInputFooter>
         </PromptInput>
-        <p className="mt-2 text-center text-xs text-muted-foreground">
+        <p className="mt-2 hidden text-center text-xs text-muted-foreground sm:block">
           AozoraAi can make mistakes. Check important information.
         </p>
       </div>
