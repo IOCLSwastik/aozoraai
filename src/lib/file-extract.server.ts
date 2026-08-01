@@ -2,8 +2,8 @@ import { unzipSync, strFromU8 } from "fflate";
 
 export type AttachedFile = {
   url: string;
-  mediaType?: string;
-  filename?: string;
+  mediaType?: string | undefined;
+  filename?: string | undefined;
 };
 
 const TEXT_EXTENSIONS = [
