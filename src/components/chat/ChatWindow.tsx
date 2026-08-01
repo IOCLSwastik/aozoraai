@@ -402,7 +402,22 @@ function ChatThread({
         className="mx-auto w-full max-w-3xl px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-4 sm:pb-6"
         ref={composerRef}
       >
-        <PromptInput onSubmit={handleSubmit} accept="image/*" multiple maxFiles={4}>
+        <PromptInput
+          onSubmit={handleSubmit}
+          accept={ACCEPT}
+          multiple
+          maxFiles={6}
+          maxFileSize={15 * 1024 * 1024}
+          onError={(error) =>
+            toast.error(
+              error.code === "max_file_size"
+                ? "That file is larger than 15 MB."
+                : error.code === "max_files"
+                  ? "You can attach up to 6 files."
+                  : "That file type isn't supported.",
+            )
+          }
+        >
         <AttachmentPreviews clearRef={clearAttachmentsRef} />
           <PromptInputTextarea
             placeholder="Message AozoraAi…"
@@ -413,7 +428,20 @@ function ChatThread({
             <PromptInputActionMenu>
               <PromptInputActionMenuTrigger />
               <PromptInputActionMenuContent>
-                <PromptInputActionAddAttachments label="Attach an image" />
+                <PromptInputActionAddAttachments
+                  label="Add image"
+                  accept="image/*"
+                >
+                  <ImagePlus className="mr-2 h-4 w-4" />
+                  Add image
+                </PromptInputActionAddAttachments>
+                <PromptInputActionAddAttachments
+                  label="Upload files"
+                  accept={DOCUMENT_ACCEPT}
+                >
+                  <Paperclip className="mr-2 h-4 w-4" />
+                  Upload files
+                </PromptInputActionAddAttachments>
               </PromptInputActionMenuContent>
             </PromptInputActionMenu>
             <PromptInputSubmit status={status} onStop={stop} disabled={false} />
