@@ -28,7 +28,7 @@ const capabilities = [
   {
     icon: MessagesSquare,
     title: "Threaded memory",
-    body: "Every conversation lives at its own URL and syncs to your account across devices.",
+    body: "Every conversation lives at its own URL and is saved automatically — no sign-up needed.",
   },
   {
     icon: Globe,
