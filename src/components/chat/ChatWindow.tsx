@@ -2,8 +2,8 @@ import { useChat } from "@ai-sdk/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import { Download, FileText, ImagePlus, Paperclip, X } from "lucide-react";
-import { useEffect, useMemo, useRef } from "react";
+import { Download, FileText, ImagePlus, Paperclip, Upload, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import logo from "@/assets/aozora-logo.png";
@@ -223,6 +223,8 @@ function ChatThread({
   };
 
   const clearAttachmentsRef = useRef<(() => void) | null>(null);
+  const dragDepth = useRef(0);
+  const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     focusComposer();
