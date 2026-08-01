@@ -26,7 +26,13 @@ import {
   type PromptInputMessage,
 } from "@/components/ai-elements/prompt-input";
 import { Shimmer } from "@/components/ai-elements/shimmer";
-import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput } from "@/components/ai-elements/tool";
+import {
+  Tool,
+  ToolContent,
+  ToolHeader,
+  ToolInput,
+  ToolOutput,
+} from "@/components/ai-elements/tool";
 import { Spinner } from "@/components/ui/spinner";
 import { supabase } from "@/integrations/supabase/client";
 import { getThread } from "@/lib/threads.functions";
@@ -210,8 +216,7 @@ export function ChatWindow({ threadId }: ChatWindowProps) {
                   if (part.type === "tool-web_search" || part.type === "tool-generate_image") {
                     const isImage = part.type === "tool-generate_image";
                     const output = part.output as
-                      | { imageUrl?: string; prompt?: string; error?: string }
-                      | undefined;
+                      { imageUrl?: string; prompt?: string; error?: string } | undefined;
 
                     return (
                       <div key={key} className="w-full space-y-3">

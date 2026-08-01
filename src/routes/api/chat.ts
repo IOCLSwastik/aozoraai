@@ -1,11 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import {
-  convertToModelMessages,
-  generateText,
-  stepCountIs,
-  streamText,
-  type UIMessage,
-} from "ai";
+import { convertToModelMessages, generateText, stepCountIs, streamText, type UIMessage } from "ai";
 
 import { createLovableAiGatewayProvider, getLovableAiGatewayRunId } from "@/lib/ai-gateway.server";
 import { createImageGenerationTool, webSearchTool } from "@/lib/ai-tools.server";
@@ -91,7 +85,10 @@ export const Route = createFileRoute("/api/chat")({
                 prompt: `Write a short conversation title (max 5 words, no quotes, no trailing period) for this first message:\n\n${firstText}`,
                 providerOptions: { lovable: { reasoningEffort: "none" } },
               });
-              const title = titled.text.trim().replace(/^["']|["']$/g, "").slice(0, 80);
+              const title = titled.text
+                .trim()
+                .replace(/^["']|["']$/g, "")
+                .slice(0, 80);
               if (title) {
                 await supabase.from("threads").update({ title }).eq("id", threadId);
               }

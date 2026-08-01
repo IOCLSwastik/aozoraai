@@ -9,7 +9,10 @@ export type SearchResult = {
 };
 
 function stripHtml(value: string) {
-  return value.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+  return value
+    .replace(/<[^>]*>/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 async function searchWeb(query: string, limit: number): Promise<SearchResult[]> {
