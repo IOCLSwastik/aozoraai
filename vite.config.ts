@@ -12,4 +12,11 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  vite: {
+    resolve: {
+      // pdf-lib pulls tslib's CJS build, which breaks interop in the Worker bundle
+      // ("Cannot destructure property '__extends'"). Force the ESM build.
+      alias: [{ find: /^tslib$/, replacement: "tslib/tslib.es6.mjs" }],
+    },
+  },
 });
