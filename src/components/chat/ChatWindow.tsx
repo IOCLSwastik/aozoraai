@@ -51,6 +51,26 @@ function formatBytes(bytes?: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function imageFileName(source?: string, url?: string) {
+  const slug = (source ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .split("-")
+    .filter(Boolean)
+    .slice(0, 6)
+    .join("-");
+  const stamp = new Date()
+    .toISOString()
+    .slice(0, 16)
+    .replace(/[-:]/g, "")
+    .replace("T", "-");
+  const extMatch = /^data:image\/([a-z0-9+]+)/.exec(url ?? "")?.[1] ??
+    /\.(png|jpe?g|webp|gif)(?:\?|$)/i.exec(url ?? "")?.[1];
+  const ext = (extMatch ?? "png").toLowerCase().replace("jpeg", "jpg");
+  return `${slug || "aozora-image"}-${stamp}.${ext}`;
+}
+
 function AddAttachmentsItem({
   accept,
   icon,
@@ -371,7 +391,10 @@ function ChatThread({
                             />
                             <a
                               href={output.imageUrl}
-                              download="aozora-image.png"
+                              download={imageFileName(
+                                output.prompt ?? output.instruction,
+                                output.imageUrl,
+                              )}
                               className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
                             >
                               <Download className="h-3.5 w-3.5" />
