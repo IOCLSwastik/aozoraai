@@ -428,6 +428,29 @@ function ChatThread({
         className="mx-auto w-full max-w-3xl px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-4 sm:pb-6"
         ref={composerRef}
       >
+        <div
+          className="relative"
+          onDragEnter={(event) => {
+            if (event.dataTransfer?.types?.includes("Files")) {
+              dragDepth.current += 1;
+              setIsDragging(true);
+            }
+          }}
+          onDragOver={(event) => {
+            if (event.dataTransfer?.types?.includes("Files")) {
+              event.preventDefault();
+              setIsDragging(true);
+            }
+          }}
+          onDragLeave={() => {
+            dragDepth.current = Math.max(0, dragDepth.current - 1);
+            if (dragDepth.current === 0) setIsDragging(false);
+          }}
+          onDrop={() => {
+            dragDepth.current = 0;
+            setIsDragging(false);
+          }}
+        >
         <PromptInput
           onSubmit={handleSubmit}
           accept={ACCEPT}
@@ -471,8 +494,18 @@ function ChatThread({
             <PromptInputSubmit status={status} onStop={stop} disabled={false} />
           </PromptInputFooter>
         </PromptInput>
+          {isDragging ? (
+            <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-primary bg-background/85 text-center backdrop-blur-sm">
+              <Upload className="h-5 w-5 text-primary" />
+              <p className="text-sm font-medium">Drop files to attach</p>
+              <p className="text-xs text-muted-foreground">
+                Images, PDF, Word, Excel and more — up to 6 files, 15 MB each
+              </p>
+            </div>
+          ) : null}
+        </div>
         <p className="mt-2 hidden text-center text-xs text-muted-foreground sm:block">
-          AozoraAi can make mistakes. Check important information.
+          Drag &amp; drop files here. AozoraAi can make mistakes. Check important information.
         </p>
       </div>
       {isBusy ? <span className="sr-only">AozoraAi is responding</span> : null}
