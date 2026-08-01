@@ -149,5 +149,31 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    font-family: var(--font-body);
   }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-sans);
+    letter-spacing: -0.02em;
+  }
+}
+
+@utility aozora-glow {
+  box-shadow:
+    0 0 0 1px oklch(0.68 0.18 247 / 25%),
+    0 0 40px -8px oklch(0.68 0.18 247 / 45%);
+}
+
+@utility aozora-gradient-text {
+  background-image: linear-gradient(
+    100deg,
+    oklch(0.98 0.01 240),
+    oklch(0.8 0.15 235),
+    oklch(0.72 0.17 255)
+  );
+  background-clip: text;
+  color: transparent;
 }
