@@ -80,23 +80,47 @@ async function toDataUrl(url: string) {
 
 export function ChatWindow({ threadId }: ChatWindowProps) {
   const fetchThread = useServerFn(getThread);
-  const queryClient = useQueryClient();
-  const composerRef = useRef<HTMLDivElement | null>(null);
 
   const threadQuery = useQuery({
     queryKey: ["thread", threadId],
     queryFn: () => fetchThread({ data: { threadId } }),
   });
 
-  const initialMessages = useMemo<UIMessage[]>(
-    () =>
-      (threadQuery.data?.messages ?? []).map((message) => ({
-        id: message.id,
-        role: message.role,
-        parts: message.parts as UIMessage["parts"],
-      })),
-    [threadQuery.data],
+  if (threadQuery.isPending) {
+    return (
+      <div className="flex flex-1 items-center justify-center text-muted-foreground">
+        <Spinner />
+      </div>
+    );
+  }
+
+  const history: UIMessage[] = (threadQuery.data?.messages ?? []).map((message) => ({
+    id: message.id,
+    role: message.role,
+    parts: message.parts as UIMessage["parts"],
+  }));
+
+  return (
+    <ChatThread
+      key={threadId}
+      threadId={threadId}
+      title={threadQuery.data?.thread.title ?? "New chat"}
+      initialMessages={history}
+    />
   );
+}
+
+function ChatThread({
+  threadId,
+  title,
+  initialMessages,
+}: {
+  threadId: string;
+  title: string;
+  initialMessages: UIMessage[];
+}) {
+  const queryClient = useQueryClient();
+  const composerRef = useRef<HTMLDivElement | null>(null);
 
   const transport = useMemo(
     () =>
@@ -163,21 +187,11 @@ export function ChatWindow({ threadId }: ChatWindowProps) {
 
   const isBusy = status === "submitted" || status === "streaming";
 
-  if (threadQuery.isLoading) {
-    return (
-      <div className="flex flex-1 items-center justify-center text-muted-foreground">
-        <Spinner />
-      </div>
-    );
-  }
-
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <header className="flex items-center gap-2 border-b border-border px-5 py-3">
         <img src={logo} alt="" width={22} height={22} className="h-5.5 w-5.5 md:hidden" />
-        <h1 className="truncate text-sm font-medium">
-          {threadQuery.data?.thread.title ?? "New chat"}
-        </h1>
+        <h1 className="truncate text-sm font-medium">{title}</h1>
       </header>
 
       <Conversation className="min-h-0 flex-1">
