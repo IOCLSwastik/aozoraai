@@ -1,12 +1,11 @@
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { LogOut, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import logo from "@/assets/aozora-logo.png";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import { createThread, deleteThread, listThreads } from "@/lib/threads.functions";
 import { cn } from "@/lib/utils";
 
@@ -42,13 +41,6 @@ export function ThreadSidebar() {
     },
     onError: () => toast.error("Could not delete that chat."),
   });
-
-  async function signOut() {
-    await queryClient.cancelQueries();
-    queryClient.clear();
-    await supabase.auth.signOut();
-    navigate({ to: "/auth", replace: true });
-  }
 
   return (
     <aside className="hidden w-72 shrink-0 flex-col border-r border-sidebar-border bg-sidebar md:flex">
@@ -103,12 +95,6 @@ export function ThreadSidebar() {
         </ul>
       </nav>
 
-      <div className="border-t border-sidebar-border p-3">
-        <Button variant="ghost" className="w-full justify-start gap-2" onClick={signOut}>
-          <LogOut className="h-4 w-4" />
-          Sign out
-        </Button>
-      </div>
     </aside>
   );
 }

@@ -28,7 +28,7 @@ const capabilities = [
   {
     icon: MessagesSquare,
     title: "Threaded memory",
-    body: "Every conversation lives at its own URL and syncs to your account across devices.",
+    body: "Every conversation lives at its own URL and is saved automatically — no sign-up needed.",
   },
   {
     icon: Globe,
@@ -65,7 +65,7 @@ function Landing() {
           <span className="font-sans text-lg font-semibold tracking-tight">AozoraAi</span>
         </div>
         <Button asChild variant="ghost">
-          <Link to="/auth">Sign in</Link>
+          <Link to="/chat">Open chat</Link>
         </Button>
       </header>
 
@@ -84,7 +84,7 @@ function Landing() {
           </p>
           <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
             <Button asChild size="lg" className="aozora-glow">
-              <Link to="/auth">Start chatting free</Link>
+              <Link to="/chat">Start chatting free</Link>
             </Button>
             <Button asChild size="lg" variant="outline">
               <Link to="/chat">Open AozoraAi</Link>
