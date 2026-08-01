@@ -51,7 +51,7 @@ function AttachmentPreviews() {
           type="button"
           onClick={() => attachments.remove(file.id)}
           title={`Remove ${file.filename ?? "attachment"}`}
-          className="group relative h-14 w-14 overflow-hidden rounded-lg border border-border"
+          className="group relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-border sm:h-14 sm:w-14"
         >
           {file.mediaType?.startsWith("image/") ? (
             <img src={file.url} alt="" className="h-full w-full object-cover" />
