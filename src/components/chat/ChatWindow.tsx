@@ -161,6 +161,8 @@ function ChatThread({
     composerRef.current?.querySelector("textarea")?.focus();
   };
 
+  const clearAttachmentsRef = useRef<(() => void) | null>(null);
+
   useEffect(() => {
     focusComposer();
   }, [threadId, status]);
@@ -351,7 +353,7 @@ function ChatThread({
         ref={composerRef}
       >
         <PromptInput onSubmit={handleSubmit} accept="image/*" multiple maxFiles={4}>
-          <AttachmentPreviews />
+        <AttachmentPreviews clearRef={clearAttachmentsRef} />
           <PromptInputTextarea
             placeholder="Message AozoraAi…"
             autoFocus
