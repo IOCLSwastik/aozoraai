@@ -454,20 +454,18 @@ function ChatThread({
             <PromptInputActionMenu>
               <PromptInputActionMenuTrigger />
               <PromptInputActionMenuContent>
-                <PromptInputActionAddAttachments
-                  label="Add image"
+                <AddAttachmentsItem
                   accept="image/*"
+                  icon={<ImagePlus className="mr-2 h-4 w-4" />}
                 >
-                  <ImagePlus className="mr-2 h-4 w-4" />
                   Add image
-                </PromptInputActionAddAttachments>
-                <PromptInputActionAddAttachments
-                  label="Upload files"
+                </AddAttachmentsItem>
+                <AddAttachmentsItem
                   accept={DOCUMENT_ACCEPT}
+                  icon={<Paperclip className="mr-2 h-4 w-4" />}
                 >
-                  <Paperclip className="mr-2 h-4 w-4" />
                   Upload files
-                </PromptInputActionAddAttachments>
+                </AddAttachmentsItem>
               </PromptInputActionMenuContent>
             </PromptInputActionMenu>
             <PromptInputSubmit status={status} onStop={stop} disabled={false} />
