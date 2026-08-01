@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
 import { createThread, listThreads } from "@/lib/threads.functions";
 
-export const Route = createFileRoute("/_authenticated/chat/")({
+export const Route = createFileRoute("/chat/")({
   component: ChatIndex,
 });
 

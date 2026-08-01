@@ -2,7 +2,7 @@ import { createFileRoute, Outlet } from "@tanstack/react-router";
 
 import { ThreadSidebar } from "@/components/chat/ThreadSidebar";
 
-export const Route = createFileRoute("/_authenticated/chat")({
+export const Route = createFileRoute("/chat")({
   component: ChatLayout,
 });
 
