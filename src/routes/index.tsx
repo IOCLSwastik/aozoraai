@@ -59,54 +59,62 @@ function Landing() {
         }}
       />
 
-      <header className="relative mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6">
-        <div className="flex items-center gap-2">
-          <img src={logo} alt="AozoraAi logo" width={32} height={32} className="h-8 w-8" />
-          <span className="font-sans text-lg font-semibold tracking-tight">AozoraAi</span>
+      <header className="relative mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-6 sm:py-6">
+        <div className="flex min-w-0 items-center gap-2">
+          <img
+            src={logo}
+            alt="AozoraAi logo"
+            width={32}
+            height={32}
+            className="h-7 w-7 shrink-0 sm:h-8 sm:w-8"
+          />
+          <span className="truncate font-sans text-base font-semibold tracking-tight sm:text-lg">
+            AozoraAi
+          </span>
         </div>
-        <Button asChild variant="ghost">
+        <Button asChild variant="ghost" className="shrink-0">
           <Link to="/chat">Open chat</Link>
         </Button>
       </header>
 
-      <main className="relative mx-auto w-full max-w-6xl px-6 pb-24">
-        <section className="pt-16 pb-24 text-center sm:pt-24">
-          <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-4 py-1.5 text-xs text-muted-foreground">
+      <main className="relative mx-auto w-full max-w-6xl px-4 pb-16 sm:px-6 sm:pb-24">
+        <section className="pt-10 pb-16 text-center sm:pt-24 sm:pb-24">
+          <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1.5 text-[0.7rem] text-muted-foreground sm:px-4 sm:text-xs">
             <span className="h-1.5 w-1.5 rounded-full bg-primary" />
             Powered by frontier reasoning models
           </p>
-          <h1 className="mx-auto max-w-3xl text-5xl leading-[1.05] font-semibold sm:text-6xl">
+          <h1 className="mx-auto max-w-3xl text-[clamp(2.25rem,10vw,3.75rem)] leading-[1.05] font-semibold text-balance">
             An AI that thinks in <span className="aozora-gradient-text">open sky</span>
           </h1>
-          <p className="mx-auto mt-6 max-w-xl text-base text-muted-foreground sm:text-lg">
+          <p className="mx-auto mt-5 max-w-xl text-sm text-muted-foreground sm:mt-6 sm:text-lg">
             AozoraAi answers hard questions, searches the live web, understands the images you
             share, and paints new ones — all in one calm, fast workspace.
           </p>
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
-            <Button asChild size="lg" className="aozora-glow">
+          <div className="mt-8 flex w-full flex-col items-stretch justify-center gap-3 sm:mt-10 sm:flex-row sm:items-center">
+            <Button asChild size="lg" className="aozora-glow w-full sm:w-auto">
               <Link to="/chat">Start chatting free</Link>
             </Button>
-            <Button asChild size="lg" variant="outline">
+            <Button asChild size="lg" variant="outline" className="w-full sm:w-auto">
               <Link to="/chat">Open AozoraAi</Link>
             </Button>
           </div>
         </section>
 
-        <section className="grid gap-4 sm:grid-cols-2">
+        <section className="grid gap-3 sm:grid-cols-2 sm:gap-4">
           {capabilities.map(({ icon: Icon, title, body }) => (
             <article
               key={title}
-              className="rounded-2xl border border-border bg-card/70 p-6 transition-colors hover:border-primary/40"
+              className="rounded-2xl border border-border bg-card/70 p-5 transition-colors hover:border-primary/40 sm:p-6"
             >
               <Icon className="mb-4 h-5 w-5 text-primary" aria-hidden />
-              <h2 className="text-lg font-semibold">{title}</h2>
+              <h2 className="text-base font-semibold sm:text-lg">{title}</h2>
               <p className="mt-2 text-sm text-muted-foreground">{body}</p>
             </article>
           ))}
         </section>
       </main>
 
-      <footer className="relative border-t border-border py-8 text-center text-xs text-muted-foreground">
+      <footer className="relative border-t border-border px-4 py-8 pb-[max(2rem,env(safe-area-inset-bottom))] text-center text-xs text-muted-foreground">
         AozoraAi · 青空 · built for clear thinking
       </footer>
     </div>
