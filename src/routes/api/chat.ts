@@ -2,7 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { convertToModelMessages, generateText, stepCountIs, streamText, type UIMessage } from "ai";
 
 import { createLovableAiGatewayProvider, getLovableAiGatewayRunId } from "@/lib/ai-gateway.server";
-import { createImageGenerationTool, webSearchTool } from "@/lib/ai-tools.server";
+import {
+  createImageEditTool,
+  createImageGenerationTool,
+  createPdfTool,
+  webSearchTool,
+  type SourceImage,
+} from "@/lib/ai-tools.server";
 import { supabaseFromRequest } from "@/lib/supabase-request.server";
 
 const SYSTEM_PROMPT = `You are AozoraAi, a thoughtful, precise and friendly AI assistant. "Aozora" means "blue sky" in Japanese — keep answers clear, open and calm.
@@ -10,8 +16,11 @@ const SYSTEM_PROMPT = `You are AozoraAi, a thoughtful, precise and friendly AI a
 Guidelines:
 - Use rich markdown: headings, lists, tables and fenced code blocks with language tags.
 - Use the web_search tool for current events, recent facts, prices, people or anything you may not know. Cite sources as markdown links.
-- Use the generate_image tool when the user asks for an image, illustration or visual. Do not describe the image instead of generating it.
-- When the user attaches an image, analyse it directly.
+- Use the generate_image tool when the user asks for a NEW image, illustration or visual from a description. Do not describe the image instead of generating it.
+- When the user attaches an image and asks for any change to it — enhance, upscale-looking cleanup, brighten, retouch, restyle, remove or replace the background, add or remove something, turn it into art — you MUST call the edit_image tool with a concrete editing instruction. Never reply with only text or advice in that case, and never use generate_image when a source image is attached.
+- When the user attaches an image and only asks a question about it, analyse it directly.
+- When the user asks for a PDF, report, resume, CV, invoice, letter, handout, cheat sheet or any downloadable document, you MUST call the create_pdf tool and pass the full document content. Never output HTML, never put the document in a code block, and never claim you cannot create files.
+- After a tool returns a file or image, keep your reply short: say what you made and that it is shown above.
 - Be concise by default and go deeper when asked.`;
 
 type ChatRequestBody = { messages?: unknown; threadId?: unknown };
@@ -55,6 +64,19 @@ export const Route = createFileRoute("/api/chat")({
 
         const uiMessages = messages as UIMessage[];
         const lastMessage = uiMessages.at(-1);
+
+        const sourceImages: SourceImage[] = (lastMessage?.parts ?? [])
+          .filter(
+            (part): part is { type: "file"; url: string; mediaType?: string; filename?: string } =>
+              part.type === "file" &&
+              typeof (part as { url?: unknown }).url === "string" &&
+              ((part as { mediaType?: string }).mediaType ?? "").startsWith("image/"),
+          )
+          .map((part) => ({
+            url: part.url,
+            mediaType: part.mediaType,
+            filename: part.filename,
+          }));
 
         if (lastMessage?.role === "user") {
           const { error: insertError } = await supabase.from("messages").insert({
@@ -105,6 +127,8 @@ export const Route = createFileRoute("/api/chat")({
           tools: {
             web_search: webSearchTool,
             generate_image: createImageGenerationTool(apiKey),
+            edit_image: createImageEditTool(apiKey, sourceImages),
+            create_pdf: createPdfTool(supabase, userId),
           },
           stopWhen: stepCountIs(50),
           providerOptions: { lovable: { reasoningEffort: "none" } },
