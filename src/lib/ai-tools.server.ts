@@ -1,6 +1,21 @@
 import { tool } from "ai";
 import { z } from "zod";
-import type { SupabaseClient } from "@supabase/supabase-js";
+
+type StorageClient = {
+  storage: {
+    from: (bucket: string) => {
+      upload: (
+        path: string,
+        body: Uint8Array,
+        options: { contentType: string; upsert: boolean },
+      ) => Promise<{ error: { message: string } | null }>;
+      createSignedUrl: (
+        path: string,
+        expiresIn: number,
+      ) => Promise<{ data: { signedUrl: string } | null; error: { message: string } | null }>;
+    };
+  };
+};
 
 export type SearchResult = {
   title: string;
@@ -149,7 +164,7 @@ export function createImageGenerationTool(lovableApiKey: string) {
   });
 }
 
-export type SourceImage = { url: string; mediaType?: string; filename?: string };
+export type SourceImage = { url: string; mediaType?: string | undefined; filename?: string | undefined };
 
 function extractImage(payload: unknown): string | undefined {
   const body = payload as {
@@ -231,10 +246,7 @@ export function createImageEditTool(lovableApiKey: string, sourceImages: SourceI
   });
 }
 
-export function createPdfTool(
-  supabase: SupabaseClient<never, never, never>,
-  userId: string,
-) {
+export function createPdfTool(supabase: StorageClient, userId: string) {
   return tool({
     description:
       "Create a real downloadable .pdf file. Use for every request for a PDF, report, resume/CV, invoice, letter, handout, cheat sheet, plan or 'document I can download'. Never write HTML or a code block instead.",
