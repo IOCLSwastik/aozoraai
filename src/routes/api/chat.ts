@@ -104,7 +104,7 @@ export const Route = createFileRoute("/api/chat")({
         const result = streamText({
           model,
           system: SYSTEM_PROMPT,
-          messages: convertToModelMessages(uiMessages),
+          messages: await convertToModelMessages(uiMessages),
           tools: {
             web_search: webSearchTool,
             generate_image: createImageGenerationTool(apiKey),
