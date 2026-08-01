@@ -15,9 +15,9 @@ import {
 import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
 import {
   PromptInput,
-  PromptInputActionAddAttachments,
   PromptInputActionMenu,
   PromptInputActionMenuContent,
+  PromptInputActionMenuItem,
   PromptInputActionMenuTrigger,
   PromptInputHeader,
   PromptInputFooter,
@@ -49,6 +49,32 @@ function formatBytes(bytes?: number) {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function AddAttachmentsItem({
+  accept,
+  icon,
+  children,
+}: {
+  accept: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  const attachments = usePromptInputAttachments();
+
+  return (
+    <PromptInputActionMenuItem
+      onSelect={(event) => {
+        event.preventDefault();
+        const input = attachments.fileInputRef.current;
+        if (input) input.accept = accept;
+        attachments.openFileDialog();
+      }}
+    >
+      {icon}
+      {children}
+    </PromptInputActionMenuItem>
+  );
 }
 
 function AttachmentPreviews({ clearRef }: { clearRef: React.MutableRefObject<(() => void) | null> }) {
