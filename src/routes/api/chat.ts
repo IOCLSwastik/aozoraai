@@ -10,6 +10,7 @@ import {
   type SourceImage,
 } from "@/lib/ai-tools.server";
 import { supabaseFromRequest } from "@/lib/supabase-request.server";
+import { extractFileText } from "@/lib/file-extract.server";
 
 const SYSTEM_PROMPT = `You are AozoraAi, a thoughtful, precise and friendly AI assistant. "Aozora" means "blue sky" in Japanese — keep answers clear, open and calm.
 
@@ -26,6 +27,8 @@ Guidelines:
 - Use the generate_image tool when the user asks for a NEW image, illustration or visual from a description. Do not describe the image instead of generating it.
 - When the user attaches an image and asks for any change to it — enhance, upscale-looking cleanup, brighten, retouch, restyle, remove or replace the background, add or remove something, turn it into art — you MUST call the edit_image tool with a concrete editing instruction. Never reply with only text or advice in that case, and never use generate_image when a source image is attached.
 - When the user attaches an image and only asks a question about it, analyse it directly.
+- Users can also attach documents (PDF, Word, Excel, PowerPoint, CSV, text and code files). Non-PDF documents arrive as extracted text blocks labelled "Attached file". Read them carefully and answer, summarise, analyse, compare or extract data from them. Never claim you cannot open files.
+- When asked to revise or rewrite an attached document, produce the revised version and call create_pdf so the user gets a downloadable copy; the original is never modified.
 - When the user asks for a PDF, report, resume, CV, invoice, letter, handout, cheat sheet or any downloadable document, you MUST call the create_pdf tool and pass the full document content. Never output HTML, never put the document in a code block, and never claim you cannot create files.
 - create_pdf must receive well-structured markdown so the file looks professional: a short intro paragraph, '## ' sections, '### ' sub-sections, bullets for lists, '> ' for callouts, and real pipe tables (with a |---|---| divider and |---:| for money/number columns) for every piece of tabular data. Never fake a table with bullets, pipes-as-text, or ASCII art, and never leave raw markdown pipes in a paragraph.
 - After a tool returns a file or image, keep your reply short: say what you made and that it is shown above.
@@ -72,6 +75,34 @@ export const Route = createFileRoute("/api/chat")({
 
         const uiMessages = messages as UIMessage[];
         const lastMessage = uiMessages.at(-1);
+
+        const modelMessages = uiMessages.map((message) => {
+          if (message.role !== "user") return message;
+          const parts = ((message.parts ?? []) as unknown[]).flatMap((rawPart) => {
+            const part = rawPart as {
+              type?: string;
+              url?: string;
+              mediaType?: string;
+              filename?: string;
+            };
+            if (part.type !== "file" || typeof part.url !== "string") return [rawPart];
+            const mediaType = part.mediaType ?? "";
+            if (mediaType.startsWith("image/") || mediaType === "application/pdf") return [rawPart];
+            const text = extractFileText({
+              url: part.url,
+              mediaType: part.mediaType,
+              filename: part.filename,
+            });
+            if (text === null) return [rawPart];
+            return [
+              {
+                type: "text",
+                text: `Attached file: ${part.filename ?? "document"}\n\n${text}`,
+              },
+            ];
+          });
+          return { ...message, parts: parts as UIMessage["parts"] };
+        });
 
         const sourceImages: SourceImage[] = ((lastMessage?.parts ?? []) as unknown[])
           .map((part) => part as { type?: string; url?: string; mediaType?: string; filename?: string })
@@ -132,7 +163,7 @@ export const Route = createFileRoute("/api/chat")({
         const result = streamText({
           model,
           system: SYSTEM_PROMPT,
-          messages: await convertToModelMessages(uiMessages),
+          messages: await convertToModelMessages(modelMessages),
           tools: {
             web_search: webSearchTool,
             generate_image: createImageGenerationTool(apiKey),

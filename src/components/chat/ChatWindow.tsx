@@ -2,7 +2,7 @@ import { useChat } from "@ai-sdk/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import { Download, FileText } from "lucide-react";
+import { Download, FileText, ImagePlus, Paperclip, X } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 import { toast } from "sonner";
 
@@ -15,9 +15,9 @@ import {
 import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
 import {
   PromptInput,
-  PromptInputActionAddAttachments,
   PromptInputActionMenu,
   PromptInputActionMenuContent,
+  PromptInputActionMenuItem,
   PromptInputActionMenuTrigger,
   PromptInputHeader,
   PromptInputFooter,
@@ -40,6 +40,43 @@ import { getThread } from "@/lib/threads.functions";
 
 type ChatWindowProps = { threadId: string };
 
+const DOCUMENT_ACCEPT =
+  ".pdf,.doc,.docx,.txt,.rtf,.md,.csv,.tsv,.xls,.xlsx,.ppt,.pptx,.json,.xml,.yml,.yaml,.log";
+const ACCEPT = `image/*,${DOCUMENT_ACCEPT}`;
+
+function formatBytes(bytes?: number) {
+  if (!bytes) return null;
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function AddAttachmentsItem({
+  accept,
+  icon,
+  children,
+}: {
+  accept: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  const attachments = usePromptInputAttachments();
+
+  return (
+    <PromptInputActionMenuItem
+      onSelect={(event) => {
+        event.preventDefault();
+        const input = attachments.fileInputRef.current;
+        if (input) input.accept = accept;
+        attachments.openFileDialog();
+      }}
+    >
+      {icon}
+      {children}
+    </PromptInputActionMenuItem>
+  );
+}
+
 function AttachmentPreviews({ clearRef }: { clearRef: React.MutableRefObject<(() => void) | null> }) {
   const attachments = usePromptInputAttachments();
   clearRef.current = attachments.clear;
@@ -47,24 +84,48 @@ function AttachmentPreviews({ clearRef }: { clearRef: React.MutableRefObject<(()
 
   return (
     <PromptInputHeader>
-      {attachments.files.map((file) => (
-        <button
-          key={file.id}
-          type="button"
-          onClick={() => attachments.remove(file.id)}
-          title={`Remove ${file.filename ?? "attachment"}`}
-          className="group relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-border sm:h-14 sm:w-14"
-        >
-          {file.mediaType?.startsWith("image/") ? (
+      {attachments.files.map((file) =>
+        file.mediaType?.startsWith("image/") ? (
+          <button
+            key={file.id}
+            type="button"
+            onClick={() => attachments.remove(file.id)}
+            title={`Remove ${file.filename ?? "attachment"}`}
+            className="group relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-border sm:h-14 sm:w-14"
+          >
             <img src={file.url} alt="" className="h-full w-full object-cover" />
-          ) : (
-            <span className="flex h-full w-full items-center justify-center text-xs">file</span>
-          )}
-          <span className="absolute inset-0 hidden items-center justify-center bg-background/70 text-xs group-hover:flex">
-            Remove
-          </span>
-        </button>
-      ))}
+            <span className="absolute inset-0 hidden items-center justify-center bg-background/70 text-xs group-hover:flex">
+              Remove
+            </span>
+          </button>
+        ) : (
+          <div
+            key={file.id}
+            className="flex min-w-0 max-w-[15rem] shrink-0 items-center gap-2 rounded-lg border border-border bg-card px-2.5 py-2"
+          >
+            <FileText className="h-4 w-4 shrink-0 text-primary" />
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-xs font-medium">
+                {file.filename ?? "document"}
+              </span>
+              <span className="block text-[10px] uppercase text-muted-foreground">
+                {(file.filename ?? "").split(".").pop()}
+                {formatBytes((file as { size?: number }).size)
+                  ? ` · ${formatBytes((file as { size?: number }).size)}`
+                  : ""}
+              </span>
+            </span>
+            <button
+              type="button"
+              onClick={() => attachments.remove(file.id)}
+              aria-label={`Remove ${file.filename ?? "file"}`}
+              className="shrink-0 rounded p-0.5 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ),
+      )}
     </PromptInputHeader>
   );
 }
@@ -208,6 +269,7 @@ function ChatThread({
               </h2>
               <p className="mt-2 max-w-md text-sm text-muted-foreground">
                 Ask anything, attach an image, search the live web, or ask for a picture.
+                {" "}Attach PDFs, Word, Excel or PowerPoint files and I'll read them.
               </p>
             </div>
           )}
@@ -230,6 +292,20 @@ function ChatThread({
                         alt={part.filename ?? "Attached image"}
                         className="h-auto max-h-72 w-auto max-w-full rounded-xl border border-border sm:max-h-80"
                       />
+                    );
+                  }
+
+                  if (part.type === "file") {
+                    return (
+                      <span
+                        key={key}
+                        className="flex max-w-xs items-center gap-2 rounded-xl border border-border bg-card px-3 py-2"
+                      >
+                        <FileText className="h-4 w-4 shrink-0 text-primary" />
+                        <span className="min-w-0 truncate text-xs font-medium">
+                          {part.filename ?? "document"}
+                        </span>
+                      </span>
                     );
                   }
 
@@ -352,7 +428,22 @@ function ChatThread({
         className="mx-auto w-full max-w-3xl px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-4 sm:pb-6"
         ref={composerRef}
       >
-        <PromptInput onSubmit={handleSubmit} accept="image/*" multiple maxFiles={4}>
+        <PromptInput
+          onSubmit={handleSubmit}
+          accept={ACCEPT}
+          multiple
+          maxFiles={6}
+          maxFileSize={15 * 1024 * 1024}
+          onError={(error) =>
+            toast.error(
+              error.code === "max_file_size"
+                ? "That file is larger than 15 MB."
+                : error.code === "max_files"
+                  ? "You can attach up to 6 files."
+                  : "That file type isn't supported.",
+            )
+          }
+        >
         <AttachmentPreviews clearRef={clearAttachmentsRef} />
           <PromptInputTextarea
             placeholder="Message AozoraAi…"
@@ -363,7 +454,18 @@ function ChatThread({
             <PromptInputActionMenu>
               <PromptInputActionMenuTrigger />
               <PromptInputActionMenuContent>
-                <PromptInputActionAddAttachments label="Attach an image" />
+                <AddAttachmentsItem
+                  accept="image/*"
+                  icon={<ImagePlus className="mr-2 h-4 w-4" />}
+                >
+                  Add image
+                </AddAttachmentsItem>
+                <AddAttachmentsItem
+                  accept={DOCUMENT_ACCEPT}
+                  icon={<Paperclip className="mr-2 h-4 w-4" />}
+                >
+                  Upload files
+                </AddAttachmentsItem>
               </PromptInputActionMenuContent>
             </PromptInputActionMenu>
             <PromptInputSubmit status={status} onStop={stop} disabled={false} />
