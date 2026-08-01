@@ -249,9 +249,13 @@ export function createImageEditTool(lovableApiKey: string, sourceImages: SourceI
 export function createPdfTool(supabase: StorageClient, userId: string) {
   return tool({
     description:
-      "Create a real downloadable .pdf file. Use for every request for a PDF, report, resume/CV, invoice, letter, handout, cheat sheet, plan or 'document I can download'. Never write HTML or a code block instead.",
+      "Create a real, professionally formatted downloadable .pdf file. Use for every request for a PDF, report, resume/CV, invoice, letter, spec, handout, cheat sheet, plan or 'document I can download'. Never write HTML or a code block instead.",
     inputSchema: z.object({
-      title: z.string().describe("Document title, shown on the first page"),
+      title: z.string().describe("Document title, shown large on the first page"),
+      subtitle: z
+        .string()
+        .optional()
+        .describe("Optional short subtitle or company name shown under the title"),
       filename: z
         .string()
         .optional()
@@ -259,129 +263,20 @@ export function createPdfTool(supabase: StorageClient, userId: string) {
       content: z
         .string()
         .describe(
-          "The full document body in simple markdown: '# '/'## '/'### ' headings, blank-line separated paragraphs, '- ' bullets and '1. ' numbered items.",
+          "The full document body in markdown. Supported: '# '/'## '/'### ' headings, blank-line separated paragraphs, '- ' bullets, '1. ' numbered items, '> ' callouts, '---' rules, and GitHub-style pipe tables (use a |---|---| divider row, and |---:| for right-aligned number columns). Put all tabular data in real markdown tables.",
         ),
     }),
-    execute: async ({ title, filename, content }) => {
+    execute: async ({ title, subtitle, filename, content }) => {
       try {
-        const { PDFDocument, StandardFonts, rgb } = await import("pdf-lib");
+        const { renderPdf } = await import("./pdf-render.server");
+        const { bytes, pages } = await renderPdf(title, content, subtitle);
 
-        const pdf = await PDFDocument.create();
-        pdf.setTitle(title);
-        pdf.setCreator("AozoraAi");
-        const regular = await pdf.embedFont(StandardFonts.Helvetica);
-        const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
-
-        const pageSize: [number, number] = [595.28, 841.89];
-        const margin = 56;
-        const maxWidth = pageSize[0] - margin * 2;
-        const ink = rgb(0.09, 0.11, 0.16);
-        const soft = rgb(0.35, 0.4, 0.48);
-
-        let page = pdf.addPage(pageSize);
-        let cursor = pageSize[1] - margin;
-
-        const newPage = () => {
-          page = pdf.addPage(pageSize);
-          cursor = pageSize[1] - margin;
-        };
-
-        const wrap = (text: string, font: typeof regular, size: number, width: number) => {
-          const words = text.split(/\s+/).filter(Boolean);
-          const lines: string[] = [];
-          let line = "";
-          for (const word of words) {
-            const candidate = line ? `${line} ${word}` : word;
-            if (font.widthOfTextAtSize(candidate, size) > width && line) {
-              lines.push(line);
-              line = word;
-            } else {
-              line = candidate;
-            }
-          }
-          if (line) lines.push(line);
-          return lines.length > 0 ? lines : [""];
-        };
-
-        const draw = (
-          text: string,
-          options: {
-            size?: number;
-            font?: typeof regular;
-            color?: typeof ink;
-            indent?: number;
-            spaceAfter?: number;
-            spaceBefore?: number;
-          } = {},
-        ) => {
-          const size = options.size ?? 11;
-          const font = options.font ?? regular;
-          const indent = options.indent ?? 0;
-          const leading = size * 1.45;
-          cursor -= options.spaceBefore ?? 0;
-          for (const line of wrap(sanitize(text), font, size, maxWidth - indent)) {
-            if (cursor - leading < margin) newPage();
-            page.drawText(line, {
-              x: margin + indent,
-              y: cursor - size,
-              size,
-              font,
-              color: options.color ?? ink,
-            });
-            cursor -= leading;
-          }
-          cursor -= options.spaceAfter ?? 0;
-        };
-
-        draw(title, { size: 24, font: bold, spaceAfter: 6 });
-        draw(new Date().toLocaleDateString("en-US", { dateStyle: "long" }), {
-          size: 9,
-          color: soft,
-          spaceAfter: 18,
-        });
-
-        const blocks = content.replace(/\r/g, "").split("\n");
-        for (const raw of blocks) {
-          const line = raw.trimEnd();
-          if (!line.trim()) {
-            cursor -= 6;
-            continue;
-          }
-          if (line.startsWith("### ")) {
-            draw(line.slice(4), { size: 12, font: bold, spaceBefore: 8, spaceAfter: 2 });
-          } else if (line.startsWith("## ")) {
-            draw(line.slice(3), { size: 14, font: bold, spaceBefore: 12, spaceAfter: 3 });
-          } else if (line.startsWith("# ")) {
-            draw(line.slice(2), { size: 17, font: bold, spaceBefore: 14, spaceAfter: 4 });
-          } else if (/^([-*+]|\d+[.)])\s/.test(line.trim())) {
-            const item = line.trim().replace(/^([-*+]|\d+[.)])\s+/, "");
-            const marker = /^\d/.test(line.trim()) ? `${line.trim().match(/^\d+/)?.[0]}.` : "\u2022";
-            draw(`${marker}  ${item}`, { indent: 14, spaceAfter: 1 });
-          } else if (/^(-{3,}|_{3,})$/.test(line.trim())) {
-            cursor -= 8;
-          } else {
-            draw(line.trim(), { spaceAfter: 4 });
-          }
-        }
-
-        const pages = pdf.getPages();
-        pages.forEach((current, index) => {
-          const label = `${index + 1} / ${pages.length}`;
-          current.drawText(label, {
-            x: pageSize[0] / 2 - regular.widthOfTextAtSize(label, 8) / 2,
-            y: margin / 2,
-            size: 8,
-            font: regular,
-            color: soft,
-          });
-        });
-
-        const bytes = await pdf.save();
-        const safeName = (filename ?? title)
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/^-|-$/g, "")
-          .slice(0, 60) || "document";
+        const safeName =
+          (filename ?? title)
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-|-$/g, "")
+            .slice(0, 60) || "document";
         const objectPath = `${userId}/documents/${crypto.randomUUID()}/${safeName}.pdf`;
 
         const { error: uploadError } = await supabase.storage
@@ -405,7 +300,7 @@ export function createPdfTool(supabase: StorageClient, userId: string) {
         return {
           title,
           filename: `${safeName}.pdf`,
-          pages: pages.length,
+          pages,
           bytes: bytes.byteLength,
           url: signed.signedUrl,
           note: "The PDF is ready. Tell the user it is attached above and can be downloaded; do not repeat its full contents.",
@@ -416,19 +311,4 @@ export function createPdfTool(supabase: StorageClient, userId: string) {
       }
     },
   });
-}
-
-/** pdf-lib standard fonts are WinAnsi-only, so replace common typographic characters. */
-function sanitize(text: string) {
-  return text
-    .replace(/\*\*/g, "")
-    .replace(/(^|\s)\*(\S[^*]*)\*/g, "$1$2")
-    .replace(/`/g, "")
-    .replace(/[\u2018\u2019\u201B]/g, "'")
-    .replace(/[\u201C\u201D]/g, '"')
-    .replace(/[\u2013\u2014]/g, "-")
-    .replace(/\u2026/g, "...")
-    .replace(/\u00a0/g, " ")
-    // eslint-disable-next-line no-control-regex
-    .replace(/[^\x00-\xFF\u2022]/g, "");
 }
